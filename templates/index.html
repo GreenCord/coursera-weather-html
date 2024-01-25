@@ -29,11 +29,16 @@ html,body,h1,h2,h3,h4 {font-family:"Lato", sans-serif}
             
             app.numSuccesses += data;
             app.numTrials += 1
-                
+
             const alpha = 2 + app.numSuccesses;
             const beta = 2 + app.numTrials - app.numSuccesses;
             const mean = app.numSuccesses / app.numTrials;
             console.log(`α = ${alpha}; β = ${beta}; mean = ${mean}`);
+            const temperatureLabel = document.getElementById("temperatureLabel");
+            const temperatureUnit = document.getElementById("temperatureUnit");
+            const humidityLabel = document.getElementById("humidityLabel");
+            temperatureLabel.textContent = alpha
+            humidityLabel.textContent = beta
         }
         else {
             console.log(event.data)
@@ -53,63 +58,12 @@ html,body,h1,h2,h3,h4 {font-family:"Lato", sans-serif}
 <div class="w3-top">
   <div class="w3-row w3-large w3-light-grey">
     <div class="w3-col s3">
-      <a href="#" class="w3-button w3-block">{{ _("home") }}</a>
+      <span>{{ _("temperature") }}</span> <span id="temperatureLabel"></span>°<span id="temperatureUnit">F</span>
     </div>
     <div class="w3-col s3">
-      <a href="#" class="w3-button w3-block">{{ _("plans") }}</a>
-    </div>
-    <div class="w3-col s3">
-      <a href="#" class="w3-button w3-block">{{ _("about") }}</a>
-    </div>
-    <div class="w3-col s3">
-      <a href="#" class="w3-button w3-block">{{ _("contact") }}</a>
+      <span>{{ _("humidity") }}</span> <span id="humidityLabel"></span>%
     </div>
   </div>
 </div>
-
-<!-- Content -->
-<div class="w3-content" style="max-width:1100px;margin-top:50px;">
-  <!-- Grid -->
-  <div class="w3-row">
-    <div class="w3-center w3-margin-bottom">
-      <span class="w3-xlarge w3-bottombar w3-border-dark-grey">{{ _("what-we-offer") }}</span>
-    </div>
-    <div class="w3-col w3-light-grey w3-container w3-padding-16">
-      <h3>{{ _("design") }}</h3>
-      <p>{{ _("design-description") }}</p>
-    </div>
-
-    <div class="w3-col w3-grey w3-container w3-padding-16">
-      <h3>{{ _("branding") }}</h3>
-      <p>{{ _("branding-description") }}</p>
-    </div>
-
-    <div class="w3-col w3-dark-grey w3-container w3-padding-16">
-      <h3>{{ _("consultation") }}</h3>
-      <p>{{ _("consultation-description") }}</p>
-    </div>
-
-    <div class="w3-col w3-black w3-container w3-padding-16">
-      <h3>{{ _("promises") }}</h3>
-      <p>{{ product }} {{ _(_("promises-description"), _("promises-description"), product) }}</p>
-    </div>
-  </div>
-
-<!-- Footer -->
-<footer class="w3-container w3-padding-32 w3-light-grey w3-center">
-  <h4>{{ _("footer") }}</h4>
-  <a href="#" class="w3-button w3-black w3-margin"><i class="fa fa-arrow-up w3-margin-right"></i>{{ _("top") }}</a>
-  <div class="w3-xlarge w3-section">
-    <i class="fa fa-facebook-official w3-hover-opacity"></i>
-    <i class="fa fa-instagram w3-hover-opacity"></i>
-    <i class="fa fa-snapchat w3-hover-opacity"></i>
-    <i class="fa fa-pinterest-p w3-hover-opacity"></i>
-    <i class="fa fa-twitter w3-hover-opacity"></i>
-    <i class="fa fa-linkedin w3-hover-opacity"></i>
-  </div>
-  <p>{{ _("created-by") % {"author": author} }} </p>
-  <p>{{ _("total-view") % {"view": view} }} </p>
-</footer>
-
 </body>
 </html>
