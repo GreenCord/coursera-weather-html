@@ -11,10 +11,11 @@ window.onload = (event) => {
         },
         commands: {
             ack: { "command": "ack" },
+            calculateStats: { "command": "calculateStats"},
             generate1: { "command": "generate1" },
             generateN: { "command": "generateN" },
             resetKey: { "command": "resetKey" },
-            valid: ["generate1", "generateN", "resetKey"],
+            valid: ["calculateStats", "generate1", "generateN", "resetKey"],
         },
         connection: {
             offline: "&#x25cf; OFFLINE",
@@ -25,9 +26,20 @@ window.onload = (event) => {
             cnx: document.getElementById('connectionStatus'),
             status: document.getElementById('statusMessage'),
             btn: {
+                calculateStats: document.getElementById('calculateStats'),
                 generate1: document.getElementById('generate1'),
                 generateN: document.getElementById('generateN'),
                 resetKey: document.getElementById('resetKey'),
+            },
+            stats: {
+                h: document.getElementById('humidityStatsRow'),
+                t: document.getElementById('temperatureStatsRow'),
+            },
+        },
+        fn: {
+            clearStats: function() {
+                app.el.stats.h.textContent = "";
+                app.el.stats.t.textContent = "";
             }
         },
         limits: {
@@ -42,8 +54,10 @@ window.onload = (event) => {
 
     window.addEventListener("click", function (e) {
         const id = e.target.id;
+        console.log('Click! ', id)
         if (app.commands.valid.includes(id)) {
             e.preventDefault()
+            app.fn.clearStats();
             if (id == "generateN") {
                 console.log('Long operation, disable inputs');
                 toast.write(app.el.status,"Getting sensor data, please wait...");
@@ -117,6 +131,13 @@ window.onload = (event) => {
                 const { readout } = data;
                 const unit = data.hasOwnProperty('unit') ? data.unit : "F";
                 updateLabels(readout, unit)
+            }
+            if (data.hasOwnProperty('stats')) {
+                const { stats } = data
+                const temperatureString = `Min: ${stats.temperature.min}° :: Max: ${stats.temperature.max}° :: Avg: ${stats.temperature.avg}°`
+                const humidityString = `Min: ${stats.humidity.min}% :: Max: ${stats.humidity.max}% :: Avg: ${stats.humidity.avg}%`
+                app.el.stats.t.textContent = temperatureString
+                app.el.stats.h.textContent = humidityString
             }
         }
         if (!message && !message.length) message = "Something went wrong."

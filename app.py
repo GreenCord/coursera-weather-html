@@ -1,4 +1,4 @@
-import datetime, json, redis, time
+import datetime, json, pprint, redis, time
 from pseudoSensor import PseudoSensor
 from statistics import mean
 
@@ -43,6 +43,15 @@ class SensorApp():
     def handleCommand(self, command):
         print(f"::::: handleCommand :: {command}")
         match command:
+            case "calculateStats":
+                response = self.getMinMaxAvg()
+
+            case "generate1":
+                response = self.getReadout()
+                
+            case "generateN":
+                response = self.getNReadouts()
+
             case "resetKey":
                 deleted = self.deleteHistory()
                 response = {
@@ -54,11 +63,6 @@ class SensorApp():
                 if deleted == 0: 
                     response["data"]["message"] = "History deleted."
     
-            case "generate1":
-                response = self.getReadout()
-                
-            case "generateN":
-                response = self.getNReadouts()
 
             case _:
                 print("No valid command received")
@@ -68,17 +72,62 @@ class SensorApp():
                         "message": "Invalid Command"
                     }
                  }
-        return response    
+        return response
+
+    # Helper Method to map readouts into a Dict for each type of readout value, for graphing
+    def mapReadouts(self, n: int):
+        '''
+        Returns a dict of n temps, rhums, timestamps. temps will be returned
+        using the current temperatureUnit.
+        '''
+        print("mapReadouts called")
+        history = list(self.getHistory())
+        print(f"What is history?", history)
+        print(f"What is history's length?", len(history))
+        
+        if (len(history) == 0):
+            print("History is empty, return dict with empty lists")
+            return {
+                "temps": [],
+                "rhums": [],
+                "timestamps": [],
+            }
+        
+        history = sorted(history, key=lambda x: x["timestamp"])
+        pprint.pprint(history)
+        
+        readoutsToMap = history[-n:]
+        timestamps = []
+        temps = []
+        rhums = []
+        for count, readout in enumerate(readoutsToMap):
+            temp, rhum, timestamp = readout.values()            
+            if self.__currentUnit == "C":
+                temp = self.convertTemperature(temp, self.__currentUnit)
+            
+            temps.append(temp)
+            rhums.append(rhum)
+            timestamps.append(timestamp)
+        mappedValues = {
+            "temps": temps,
+            "rhums": rhums,
+            "timestamps": timestamps
+        }
+        print(f"mapReadouts complete :: {mappedValues}")
+        return mappedValues    
     
     # History Methods
     def getHistory(self):
+        history = list(self.__db.smembers(self.__serialNumber))
+        self.__history = list(map(lambda x: json.loads(x), history))
+        
         return self.__history
     
     def deleteHistory(self):
         print(f"deleteHistory called")
         sn = self.__serialNumber
         self.__db.delete(sn)
-        self.__history = self.__db.smembers(sn)
+        self.getHistory()
         print(f"S/N {sn} history cleared from app: {self.__history} and DB: {self.__db.smembers(sn)}")
         return len(self.__history)
     
@@ -87,7 +136,7 @@ class SensorApp():
         sn = self.__serialNumber
         db = self.__db
         db.sadd(sn, json.dumps(readout))
-        self.__history = db.smembers(sn)
+        self.getHistory()
         print(f"history updated, new length: {len(self.__history)}")
 
     # Sensor Reading Methods
@@ -135,18 +184,72 @@ class SensorApp():
 
         return readout
             
+    # Statistics
+    def getMinMaxAvg(self):
+        print(f"getMinMaxAvg called")
+        temps, rhums, timestamps = self.mapReadouts(self.nStats).values()
+
+        if (len(temps) == 0 | len(rhums) == 0):
+            return {
+                "error": 1,
+                "data": {
+                    "message": "Not enough data to calculate stats."
+                }
+            }
+        
+        
+        self.statMinTemp = round(min(temps))
+        self.statMaxTemp = round(max(temps))
+        self.statAvgTemp = round(mean(temps))
+    
+        self.statMinRHum = round(min(rhums))
+        self.statMaxRHum = round(max(rhums))
+        self.statAvgRHum = round(mean(rhums))
+        
+        self.statsCalculated = True
+
+        # temperatureStatText = f"Min: {self.statMinTemp} / Max: {self.statMaxTemp} / Avg: {self.statAvgTemp}"
+        # rHumidityStatText = f"Min: {self.statMinRHum} / Max: {self.statMaxRHum} / Avg: {self.statAvgRHum}"
+        
+        # print(f"Temperature • {temperatureStatText}")
+        # print(f"Relative Humidity • {rHumidityStatText}")
+        
+        # self.temperatureStats.setText(temperatureStatText)
+        # self.humidityStats.setText(rHumidityStatText)
+       
+        response = {
+            "error": 0,
+            "data": {
+                "message": "Stats calculated.",
+                "stats": {
+                    "temperature": {
+                        "avg": self.statAvgTemp,
+                        "max": self.statMaxTemp,
+                        "min": self.statMinTemp,
+                    },
+                    "humidity": {
+                        "avg": self.statAvgRHum,
+                        "max": self.statMaxRHum,
+                        "min": self.statMinRHum,
+                    }
+                },
+                "unit": self.__currentUnit
+            }
+        }
+        print(f"genMinxMaxAvg complete :: {response}")
+        return response
 
     # Temperature Conversion Methods
     def convertCurrentTemperature(self):
-        print(f"convertTemperature called to convert {self.currentTemperature}°{self.currentUnit}")
-        if self.currentUnit == "F":
+        print(f"convertTemperature called to convert {self.currentTemperature}°{self.__currentUnit}")
+        if self.__currentUnit == "F":
             self.currentTemperature = round(self.convertTemperature(self.currentTemperature, "C"))
             if self.statsCalculated:
                 self.statMinTemp = round(self.convertTemperature(self.statMinTemp,"C"))
                 self.statMaxTemp = round(self.convertTemperature(self.statMaxTemp,"C"))
                 self.statAvgTemp = round(self.convertTemperature(self.statAvgTemp,"C"))
                 self.temperatureStats.setText(f"Min: {self.statMinTemp} / Max: {self.statMaxTemp} / Avg: {self.statAvgTemp}")
-            self.currentUnit = "C"
+            self.__currentUnit = "C"
             
             self.btnConvertTemperature.setText("Convert to °F")
         else:
@@ -156,11 +259,11 @@ class SensorApp():
                 self.statMaxTemp = round(self.convertTemperature(self.statMaxTemp,"F"))
                 self.statAvgTemp = round(self.convertTemperature(self.statAvgTemp,"F"))
                 self.temperatureStats.setText(f"Min: {self.statMinTemp} / Max: {self.statMaxTemp} / Avg: {self.statAvgTemp}")
-            self.currentUnit = "F"
+            self.__currentUnit = "F"
             self.btnConvertTemperature.setText("Convert to °C")
-        print(f"= {self.currentTemperature}°{self.currentUnit}")
+        print(f"= {self.currentTemperature}°{self.__currentUnit}")
         self.temperatureLabel.setText(f"{self.currentTemperature}")
-        self.temperatureDegreeSymbol.setText(f"°{self.currentUnit}")
+        self.temperatureDegreeSymbol.setText(f"°{self.__currentUnit}")
         print("convertTemperature complete")
 
     def convertTemperature(degrees, toUnit):
