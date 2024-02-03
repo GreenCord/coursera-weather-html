@@ -93,7 +93,7 @@ class SensorApp():
                 "timestamps": [],
             }
         
-        history = sorted(history, key=lambda x: json.loads(x["timestamp"]))
+        history = sorted(history, key=lambda x: x["timestamp"])
         pprint.pprint(history)
         
         readoutsToMap = history[-n:]
@@ -102,8 +102,8 @@ class SensorApp():
         rhums = []
         for count, readout in enumerate(readoutsToMap):
             temp, rhum, timestamp = readout.values()            
-            if self.currentUnit == "C":
-                temp = self.convertTemperature(temp, self.currentUnit)
+            if self.__currentUnit == "C":
+                temp = self.convertTemperature(temp, self.__currentUnit)
             
             temps.append(temp)
             rhums.append(rhum)
@@ -188,8 +188,7 @@ class SensorApp():
     def getMinMaxAvg(self):
         print(f"getMinMaxAvg called")
         temps, rhums, timestamps = self.mapReadouts(self.nStats).values()
-        hasError = False
-        errorMessage = ""
+
         if (len(temps) == 0 | len(rhums) == 0):
             return {
                 "error": 1,
@@ -209,14 +208,14 @@ class SensorApp():
         
         self.statsCalculated = True
 
-        temperatureStatText = f"Min: {self.statMinTemp} / Max: {self.statMaxTemp} / Avg: {self.statAvgTemp}"
-        rHumidityStatText = f"Min: {self.statMinRHum} / Max: {self.statMaxRHum} / Avg: {self.statAvgRHum}"
+        # temperatureStatText = f"Min: {self.statMinTemp} / Max: {self.statMaxTemp} / Avg: {self.statAvgTemp}"
+        # rHumidityStatText = f"Min: {self.statMinRHum} / Max: {self.statMaxRHum} / Avg: {self.statAvgRHum}"
         
-        print(f"Temperature • {temperatureStatText}")
-        print(f"Relative Humidity • {rHumidityStatText}")
+        # print(f"Temperature • {temperatureStatText}")
+        # print(f"Relative Humidity • {rHumidityStatText}")
         
-        self.temperatureStats.setText(temperatureStatText)
-        self.humidityStats.setText(rHumidityStatText)
+        # self.temperatureStats.setText(temperatureStatText)
+        # self.humidityStats.setText(rHumidityStatText)
        
         response = {
             "error": 0,
@@ -242,15 +241,15 @@ class SensorApp():
 
     # Temperature Conversion Methods
     def convertCurrentTemperature(self):
-        print(f"convertTemperature called to convert {self.currentTemperature}°{self.currentUnit}")
-        if self.currentUnit == "F":
+        print(f"convertTemperature called to convert {self.currentTemperature}°{self.__currentUnit}")
+        if self.__currentUnit == "F":
             self.currentTemperature = round(self.convertTemperature(self.currentTemperature, "C"))
             if self.statsCalculated:
                 self.statMinTemp = round(self.convertTemperature(self.statMinTemp,"C"))
                 self.statMaxTemp = round(self.convertTemperature(self.statMaxTemp,"C"))
                 self.statAvgTemp = round(self.convertTemperature(self.statAvgTemp,"C"))
                 self.temperatureStats.setText(f"Min: {self.statMinTemp} / Max: {self.statMaxTemp} / Avg: {self.statAvgTemp}")
-            self.currentUnit = "C"
+            self.__currentUnit = "C"
             
             self.btnConvertTemperature.setText("Convert to °F")
         else:
@@ -260,11 +259,11 @@ class SensorApp():
                 self.statMaxTemp = round(self.convertTemperature(self.statMaxTemp,"F"))
                 self.statAvgTemp = round(self.convertTemperature(self.statAvgTemp,"F"))
                 self.temperatureStats.setText(f"Min: {self.statMinTemp} / Max: {self.statMaxTemp} / Avg: {self.statAvgTemp}")
-            self.currentUnit = "F"
+            self.__currentUnit = "F"
             self.btnConvertTemperature.setText("Convert to °C")
-        print(f"= {self.currentTemperature}°{self.currentUnit}")
+        print(f"= {self.currentTemperature}°{self.__currentUnit}")
         self.temperatureLabel.setText(f"{self.currentTemperature}")
-        self.temperatureDegreeSymbol.setText(f"°{self.currentUnit}")
+        self.temperatureDegreeSymbol.setText(f"°{self.__currentUnit}")
         print("convertTemperature complete")
 
     def convertTemperature(degrees, toUnit):
