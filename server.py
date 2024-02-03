@@ -1,7 +1,10 @@
-import random
+import json, random, redis, time
 import tornado.ioloop
 import tornado.web
 import tornado.websocket
+
+from app import SensorApp
+from dotenv import dotenv_values
 
 # Adapted from https://www.georgeho.org/tornado-websockets/ and https://phrase.com/blog/posts/tornado-web-framework-i18n/
 class MainHandler(tornado.web.RequestHandler):
@@ -12,19 +15,38 @@ class MainHandler(tornado.web.RequestHandler):
 class LocaleHandler(tornado.web.RequestHandler):
     def get(self, locale):
         self.locale = tornado.locale.get(locale)
-        self.render("index.html", product=1, author="Author Name", view=1234)
+        self.render("index.html", locale=locale)
 
 class WebSocketServer(tornado.websocket.WebSocketHandler):
     
     clients = set()
-
+    
     def open(self):
         print("WebSocket opened")
         WebSocketServer.clients.add(self)
+        print(WebSocketServer.clients)
 
     def on_message(self, message):
-        print(f"on_message received: {message}")
-        self.write_message(u"You said: " + message)
+        print(f"on_message received")
+
+        message = json.loads(message)
+        command = message["command"]
+        appResponse = app.handleCommand(command)
+        ack = None
+        data = None
+        if appResponse["error"] == 0:
+            ack = "ack"
+        else:
+            ack = "nack"
+        if "data" in appResponse:
+            data = appResponse["data"]
+        response = {
+            "ack": ack,
+            "data": data
+        }
+        self.write_message(json.dumps(response))
+        print(f"::::: command completed with response :: {response}")
+        
 
     def on_close(self):
         print("WebSocket closed")
@@ -36,19 +58,7 @@ class WebSocketServer(tornado.websocket.WebSocketHandler):
         for client in cls.clients:
             client.write_message(message)
 
-class RandomBernoulli:
-    def __init__(self):
-        self.p = 0.72
-        print(f"True p = {self.p}")
 
-    def sample(self):
-        return int(random.uniform(0, 1) <= self.p)
-
-class WTFHandler(tornado.web.RequestHandler):
-    def get(self):
-        self.write("Huh")
-
-        
 def make_app():
     return tornado.web.Application([
             (r"/", MainHandler),
@@ -56,24 +66,31 @@ def make_app():
             (r"/([^/]+)/about-us", LocaleHandler),
         ],
         template_path="templates/",
+        static_path="templates/",
         websocket_ping_interval=10,
         websocket_ping_timeout=30,
     )
-def main():
+def main(serverPort:int):
 
     app = make_app()
-    app.listen(8888)
+    app.listen(serverPort)
 
     io_loop = tornado.ioloop.IOLoop.current()
-
-    random_bernoulli = RandomBernoulli()
-    periodic_callback = tornado.ioloop.PeriodicCallback(
-        lambda: WebSocketServer.send_message(str(random_bernoulli.sample())), 100
-    )
-    periodic_callback.start()
-
     io_loop.start()
 
 if __name__ == "__main__":
+    # Get Config from Env Vars
+    config = dotenv_values(".env")
+    
+    serialNumber = config["SERIAL_NUMBER"]
+    serverPort = config["SERVER_PORT"]
+    dbHost = config["DB_HOST"]
+    dbPort = config["DB_PORT"]
+    dbId = config["DB_ID"]
+    
     tornado.locale.load_translations('locale/')
-    main()
+
+    app = SensorApp(serialNumber,dbHost,dbPort,dbId)
+    print(f"App Setup with serial number: {app.getSerialNumber()}")
+    
+    main(serverPort)

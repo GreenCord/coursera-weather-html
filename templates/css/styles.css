@@ -1,0 +1,109 @@
+html,
+body,
+h1,
+h2,
+h3,
+h4, 
+button {
+    font-family: "Jura", sans-serif;
+}
+
+html { background: #1e1b18; color: #c4cad0;}
+
+main.container {
+    color: #1789FC;
+    display: grid;
+    grid-template-columns: repeat(6, 1fr);
+    margin: 0 auto;
+    max-width: 640px;
+    place-content: stretch;
+    place-items: stretch;
+}
+.status {
+    font-size: 16px;
+    grid-row: 1;
+    padding: 8px;
+}
+
+.status.connection {
+    grid-column: 1;
+    text-align: center;
+}
+.status.message {
+    grid-column: 2 / 7;
+}
+.readout {
+    color: #C4CAD0;
+    font-size: 72px;
+    grid-column: 1 / 4;
+    line-height: 1;
+    min-height: 128px;
+    text-align: center;
+    width: 100%;
+}
+.status span {
+    display: block;
+    text-align: center;
+}
+.readout span {
+    display: inline-block;
+    vertical-align: middle;
+}
+.readout svg {
+    display: block;
+    height: 100%;
+    min-height: 24px;
+    min-width: 24px;
+    width: auto;
+}
+.readout svg path {
+    fill: #c4cad0;
+}
+.readout.temperature {
+    grid-row: 2;
+}
+.readout.humidity {
+    grid-row: 3;
+}
+.interactions {
+    border: 1px solid purple;
+    display: grid;
+    grid-column: 4 / 7;
+    grid-row: 2 / 4;
+    place-self: stretch;
+    place-content: stretch;
+    place-items: stretch;
+}
+.interactions button {
+    margin-bottom: 16px;
+    min-height: 24px;
+    width: 100%;
+}
+.temperature.toohigh,
+.temperature.toohigh svg path {
+    color: #db4437;
+    fill: #db4437;
+}
+.temperature.toolow,
+.temperature.toolow svg path {
+    color: #1789FC;
+    fill: #1789FC;
+}
+.humidity.toohigh,
+.humidity.toohigh svg path {
+    color: #1789FC;
+    fill: #1789FC;
+}
+.humidity.toolow,
+.humidity.toolow svg path {
+    color: #c8963e;
+    fill: #c8963e;
+}
+
+.connected {
+    color: #006C67;
+}
+
+.disconnected {
+    color: #db4437;
+}

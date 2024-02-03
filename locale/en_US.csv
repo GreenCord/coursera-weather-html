@@ -1,2 +1,3 @@
 temperature,Temperature:
 humidity,Humidity:
+errCommandNotImplemented,That command is not implemented yet.
