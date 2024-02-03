@@ -19,10 +19,16 @@ class SensorApp():
 
         # Init Sensor Vars
         self.__currentUnit = "F"
-        self.minTemperature = 60
-        self.maxTemperature = 80
-        self.minHumidity = 20
-        self.maxHumidity = 50
+        self.__limits = {
+            "t": {
+                "min": 60,
+                "max": 80
+            },
+            "h": {
+                "min": 20,
+                "max": 50
+            }
+        }
 
         # Init Stats Vars
         self.statMinTemp = None
@@ -35,6 +41,28 @@ class SensorApp():
         self.sparklinesGraphed = False
     
     # Administrative Methods
+    def loadApp(self):
+        limits = self.getLimits()
+        readout = self.getLastReadout()
+
+        if (readout == None):
+            readout = {
+                "temp": None,
+                "rhum": None
+            }
+        
+        return {
+            "error": 0,
+            "data": {
+                "message": "App successfully loaded.",
+                "limits": limits,
+                "readout": readout
+            }
+        }
+
+    def getLimits(self):
+        return self.__limits
+    
     def getSerialNumber(self):
         return self.__serialNumber
     
@@ -81,6 +109,9 @@ class SensorApp():
             case "generateN":
                 self.statsCalculated = False
                 response = self.getNReadouts()
+            
+            case "loadApp":
+                response = self.loadApp()
 
             case "quit":
                 response = {
