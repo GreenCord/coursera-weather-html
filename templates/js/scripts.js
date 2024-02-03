@@ -11,11 +11,20 @@ window.onload = (event) => {
         },
         commands: {
             ack: { "command": "ack" },
-            calculateStats: { "command": "calculateStats"},
+            calculateStats: { "command": "calculateStats" },
+            convertTemperature: { "command": "convertTemperature" },
             generate1: { "command": "generate1" },
             generateN: { "command": "generateN" },
+            quit: { "command": "quit" },
             resetKey: { "command": "resetKey" },
-            valid: ["calculateStats", "generate1", "generateN", "resetKey"],
+            valid: [
+                "calculateStats",
+                "convertTemperature",
+                "generate1",
+                "generateN",
+                "quit",
+                "resetKey"
+            ],
         },
         connection: {
             offline: "&#x25cf; OFFLINE",
@@ -27,8 +36,10 @@ window.onload = (event) => {
             status: document.getElementById('statusMessage'),
             btn: {
                 calculateStats: document.getElementById('calculateStats'),
+                convertTemperature: document.getElementById('convertTemperature'),
                 generate1: document.getElementById('generate1'),
                 generateN: document.getElementById('generateN'),
+                quit: document.getElementById('quit'),
                 resetKey: document.getElementById('resetKey'),
             },
             stats: {
@@ -63,7 +74,7 @@ window.onload = (event) => {
                 toast.write(app.el.status,"Getting sensor data, please wait...");
                 app.status.inputIsDisabled = true;
                 for (const key in app.el.btn) {
-                    if (Object.hasOwnProperty.call(app.el.btn, key)) {
+                    if (Object.hasOwnProperty.call(app.el.btn, key) && key !== "quit") {
                         const btn = app.el.btn[key];
                         btn.disabled = true;
                     }
@@ -138,6 +149,16 @@ window.onload = (event) => {
                 const humidityString = `Min: ${stats.humidity.min}% :: Max: ${stats.humidity.max}% :: Avg: ${stats.humidity.avg}%`
                 app.el.stats.t.textContent = temperatureString
                 app.el.stats.h.textContent = humidityString
+            }
+            if (data.hasOwnProperty('quit')) {
+                if (data["quit"]) {
+                    const header = document.getElementsByTagName("header")[0]
+                    const main = document.getElementsByTagName("main")[0]
+                    header.classList.add('hidden')
+                    main.classList.add('quit');
+                    main.textContent = data.message;
+                    webSocket.close();
+                }
             }
         }
         if (!message && !message.length) message = "Something went wrong."

@@ -13,7 +13,6 @@ html { background: #1e1b18; color: #c4cad0;}
     display: none;
     visibility: hidden;
 }
-
 header, 
 footer {
     display: block;
@@ -38,6 +37,13 @@ main.container {
     grid-template-rows: repeat(7,min-content);
     margin: 0 auto;
     max-width: 640px;
+}
+main.container.quit {
+    grid-template-columns: 1fr;
+    grid-template-rows: 1fr;
+    place-content: center;
+    place-items: center;
+    height: 100vh;
 }
 .status {
     border-bottom: 1px dotted #1789FC;
