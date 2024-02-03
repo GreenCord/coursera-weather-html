@@ -52,6 +52,14 @@ class SensorApp():
             case "generateN":
                 response = self.getNReadouts()
 
+            case "quit":
+                response = {
+                    "error": 0,
+                    "data": {
+                        "quit": 1,
+                        "message": "Data saved. You may close this window."
+                    }
+                }
             case "resetKey":
                 deleted = self.deleteHistory()
                 response = {
