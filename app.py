@@ -18,9 +18,7 @@ class SensorApp():
         self.__history = []
 
         # Init Sensor Vars
-        self.currentTemperature = 0
         self.__currentUnit = "F"
-        self.currentHumidity = 0
         self.minTemperature = 60
         self.maxTemperature = 80
         self.minHumidity = 20
@@ -40,16 +38,48 @@ class SensorApp():
     def getSerialNumber(self):
         return self.__serialNumber
     
+    def getLastReadout(self):
+        history = list(self.getHistory())
+
+        if (len(history) == 0):
+            return None
+        return sorted(history, key=lambda x: x["timestamp"])[-1]
+    
+    def getCurrentHumidity(self):
+        last = self.getLastReadout()
+        if (last != None):
+            return last["rhum"]
+
+    def getCurrentTemperature(self): 
+        last = self.getLastReadout()
+        print(f"last readout :: {last}")
+        if (last != None):
+            return last["temp"]
+
+    def getCurrentUnit(self): 
+        return self.__currentUnit
+
+    def setCurrentUnit(self, unit):
+        self.__currentUnit = unit
+        return 0
+
     def handleCommand(self, command):
         print(f"::::: handleCommand :: {command}")
+        
         match command:
             case "calculateStats":
                 response = self.getMinMaxAvg()
 
+            case "convertTemperature":
+                self.statsCalculated = False
+                response = self.convertCurrentTemperature()
+
             case "generate1":
+                self.statsCalculated = False
                 response = self.getReadout()
                 
             case "generateN":
+                self.statsCalculated = False
                 response = self.getNReadouts()
 
             case "quit":
@@ -61,16 +91,20 @@ class SensorApp():
                     }
                 }
             case "resetKey":
+                self.statsCalculated = False
                 deleted = self.deleteHistory()
                 response = {
                     "error": deleted,
                     "data": {
                         "message": "Error: History was not deleted.",
+                        "readout": {
+                            "temp": None,
+                            "rhum": None,
+                        }
                     }
                 }
                 if deleted == 0: 
                     response["data"]["message"] = "History deleted."
-    
 
             case _:
                 print("No valid command received")
@@ -80,6 +114,7 @@ class SensorApp():
                         "message": "Invalid Command"
                     }
                  }
+                
         return response
 
     # Helper Method to map readouts into a Dict for each type of readout value, for graphing
@@ -136,6 +171,12 @@ class SensorApp():
         sn = self.__serialNumber
         self.__db.delete(sn)
         self.getHistory()
+        self.statMinTemp = None
+        self.statMaxTemp = None
+        self.statAvgTemp = None
+        self.statMinRHum = None
+        self.statMaxRHum = None
+        self.statAvgRHum = None
         print(f"S/N {sn} history cleared from app: {self.__history} and DB: {self.__db.smembers(sn)}")
         return len(self.__history)
     
@@ -150,12 +191,15 @@ class SensorApp():
     # Sensor Reading Methods
     def getReadout(self):
         readout = self.generateReadout()
+        currentUnit = self.getCurrentUnit()
+        if (currentUnit == "C"):
+            readout["temp"] = self.convertTemperature(readout["temp"], currentUnit)
         response = {
             "error": 0,
             "data": {
                 "message": "Readout updated.",
                 "readout": readout,
-                "unit": self.__currentUnit
+                "unit": self.getCurrentUnit()
             }
         }
         self.updateHistory(readout)
@@ -182,14 +226,13 @@ class SensorApp():
     def generateReadout(self):
         h,t = self.ps.generate_values()
         currentTime = datetime.datetime.now()
-
         readout = {
             "temp":t,
             "rhum":h,
-            # "timestamp": currentTime
             "timestamp": currentTime.timestamp(),
         }
-
+        print("New readout generated:")
+        pprint.pprint(readout)
         return readout
             
     # Statistics
@@ -215,15 +258,6 @@ class SensorApp():
         self.statAvgRHum = round(mean(rhums))
         
         self.statsCalculated = True
-
-        # temperatureStatText = f"Min: {self.statMinTemp} / Max: {self.statMaxTemp} / Avg: {self.statAvgTemp}"
-        # rHumidityStatText = f"Min: {self.statMinRHum} / Max: {self.statMaxRHum} / Avg: {self.statAvgRHum}"
-        
-        # print(f"Temperature • {temperatureStatText}")
-        # print(f"Relative Humidity • {rHumidityStatText}")
-        
-        # self.temperatureStats.setText(temperatureStatText)
-        # self.humidityStats.setText(rHumidityStatText)
        
         response = {
             "error": 0,
@@ -249,32 +283,40 @@ class SensorApp():
 
     # Temperature Conversion Methods
     def convertCurrentTemperature(self):
-        print(f"convertTemperature called to convert {self.currentTemperature}°{self.__currentUnit}")
-        if self.__currentUnit == "F":
-            self.currentTemperature = round(self.convertTemperature(self.currentTemperature, "C"))
-            if self.statsCalculated:
-                self.statMinTemp = round(self.convertTemperature(self.statMinTemp,"C"))
-                self.statMaxTemp = round(self.convertTemperature(self.statMaxTemp,"C"))
-                self.statAvgTemp = round(self.convertTemperature(self.statAvgTemp,"C"))
-                self.temperatureStats.setText(f"Min: {self.statMinTemp} / Max: {self.statMaxTemp} / Avg: {self.statAvgTemp}")
-            self.__currentUnit = "C"
-            
-            self.btnConvertTemperature.setText("Convert to °F")
-        else:
-            self.currentTemperature = round(self.convertTemperature(self.currentTemperature, "F"))
-            if self.statsCalculated:
-                self.statMinTemp = round(self.convertTemperature(self.statMinTemp,"F"))
-                self.statMaxTemp = round(self.convertTemperature(self.statMaxTemp,"F"))
-                self.statAvgTemp = round(self.convertTemperature(self.statAvgTemp,"F"))
-                self.temperatureStats.setText(f"Min: {self.statMinTemp} / Max: {self.statMaxTemp} / Avg: {self.statAvgTemp}")
-            self.__currentUnit = "F"
-            self.btnConvertTemperature.setText("Convert to °C")
-        print(f"= {self.currentTemperature}°{self.__currentUnit}")
-        self.temperatureLabel.setText(f"{self.currentTemperature}")
-        self.temperatureDegreeSymbol.setText(f"°{self.__currentUnit}")
-        print("convertTemperature complete")
+        print(f"convertTemperature called")
+        
+        # Current Temperature always returns in °F
+        currentTemperature = round(self.getCurrentTemperature())
+        currentUnit = self.getCurrentUnit()
+        newTemperature = None
+        newUnit = None
 
-    def convertTemperature(degrees, toUnit):
+        if currentUnit == "F":
+            newTemperature = round(self.convertTemperature(currentTemperature, "C"))
+            newUnit = "C"
+            print(f"Converted {currentTemperature}°{currentUnit} to {newTemperature}°{newUnit}")
+        else:
+            newTemperature = currentTemperature
+            newUnit = "F"
+        
+        self.setCurrentUnit(newUnit)
+        print(f"Current unit updated :: {self.getCurrentUnit()}")
+
+        response = {
+            "error": 0,
+            "data": {
+                "message": f"Temperature now displayed in °{newUnit}",
+                "readout": {
+                    "temp": newTemperature,
+                    "rhum": self.getCurrentHumidity()
+                },
+                "unit": self.getCurrentUnit()
+            }
+        }
+        print(f"convertTemperature complete :: {response}")
+        return response
+
+    def convertTemperature(self, degrees, toUnit):
         if toUnit == "C":
             return (degrees - 32) * 5 / 9
         elif toUnit == "F":

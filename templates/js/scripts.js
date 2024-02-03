@@ -111,7 +111,6 @@ window.onload = (event) => {
         },
     }
 
-
     webSocket.onopen = (event) => {
         console.log(webSocket);
         console.log('webSocket.onopen fired')
@@ -131,6 +130,7 @@ window.onload = (event) => {
             webSocket.send(JSON.stringify(app.commands.ack))
         }
     }
+
     webSocket.onmessage = (event) => {
         console.log(`onmessage fired: ${event.data}`);
         response = JSON.parse(event.data)
@@ -182,9 +182,11 @@ window.onload = (event) => {
         app.el.cnx.innerHTML = app.connection.offline;
         toast.pop(app.el.status, "Sensors are disconnected.")
     }
+
     webSocket.onerror = (event) => {
         console.log('webSocket.onerror fired', event)
     }
+    
     function updateLabels(readout, unit) {
         console.log('updateLabels function called');
         console.log(`New readout :: ${JSON.stringify(readout)}`)
@@ -194,8 +196,8 @@ window.onload = (event) => {
         const temperatureLabel = document.getElementById("temperatureLabel");
         const temperatureUnit = document.getElementById("temperatureUnit");
         const humidityLabel = document.getElementById("humidityLabel");
-        const temperature = Math.round(readout.temp);
-        const humidity = Math.round(readout.rhum);
+        const temperature = readout.temp ? Math.round(readout.temp) : "—";
+        const humidity = readout.rhum ? Math.round(readout.rhum) : "—";
 
         temperatureLabel.textContent = temperature;
         temperatureUnit.textContent = unit;
