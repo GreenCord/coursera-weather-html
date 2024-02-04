@@ -1,6 +1,7 @@
 window.onload = (event) => {
-
+    
     const locale = document.getElementById("locale").textContent;
+    const webSocket = new WebSocket("ws://localhost:8888/websocket/");
     const app = {
         locale,
         firstLaunch: true,
@@ -47,11 +48,137 @@ window.onload = (event) => {
                 h: document.getElementById('humidityStatsRow'),
                 t: document.getElementById('temperatureStatsRow'),
             },
+            graph: {
+                h: document.getElementById('humidityGraphRow'),
+                t: document.getElementById('temperatureGraphRow')
+            }
         },
         fn: {
             clearStats: function() {
                 app.el.stats.h.textContent = "";
                 app.el.stats.t.textContent = "";
+            },
+            convertTimestamps: function(arr) {
+                arr.forEach((el) => {
+                    el.timestamp = el.timestamp * 1000;
+                    el["date"] = new Date(el.timestamp);
+                })
+                return arr
+            },
+            graphAxisScale: function(axis, data, key, positioning){
+                const extent = d3.extent(data, d => d[key]);
+                console.log(`Extent for ${key}: ${JSON.stringify(extent)}`)
+                if (axis.toLowerCase() === "x") return d3.scaleUtc(extent,positioning)
+                return d3.scaleLinear(extent, positioning)
+            },
+            graphHistory: function(history) {
+                app.el.graph.t.innerHTML = "";
+                app.el.graph.h.innerHTML = "";
+
+                const graphHistory = app.fn.convertTimestamps(history)
+               
+                // Declare the chart dimensions and margins.
+                const width = 928;
+                const height = 500;
+                const marginTop = 20;
+                const marginRight = 30;
+                const marginBottom = 30;
+                const marginLeft = 40;
+
+                // Declare the x (horizontal position) scale.
+                const x = app.fn
+                    .graphAxisScale("x", graphHistory, "date", [marginLeft, width - marginRight]);
+
+                // Declare the y (vertical position) scale.
+                const yT = app.fn
+                    .graphAxisScale("y", graphHistory, "temp", [height - marginBottom, marginTop]);
+                const yH = app.fn
+                    .graphAxisScale("y", graphHistory, "rhum", [height - marginBottom, marginTop]);
+
+                // Declare the line generators
+                const tLine = d3.line()
+                    .x(d => x(d.date))
+                    .y(d => yT(d.temp))
+                
+                const hLine = d3.line()
+                    .x(d => x(d.date))
+                    .y(d => yH(d.rhum))
+
+                // Create the SVG container for Temperature graph.
+                const svgT = d3.create("svg")
+                    .attr("width", width)
+                    .attr("height", height)
+                    .attr("viewBox", [0, 0, width, height])
+                    .attr("style", "max-width: 100%; height: auto; height: intrinsic;")
+                
+                // Add the x-axis.
+                svgT.append("g")
+                    .attr("transform", `translate(0,${height - marginBottom})`)
+                    .attr("style", "color: #abcdef")
+                    .call(d3.axisBottom(x).ticks(width / 80).tickSizeOuter(0));
+
+                // Add the y-axis.
+                svgT.append("g")
+                    .attr("transform", `translate(${marginLeft},0)`)
+                    .attr("style", "color: #abcdef;")
+                    .call(d3.axisLeft(yT).ticks(height / 40))
+                    .call(g => g.select(".domain").remove())
+                    .call(g => g.selectAll(".tick line").clone()
+                        .attr("x2", width - marginLeft - marginRight)
+                        .attr("stroke-opacity", 0.1))
+                    .call(g => g.append("text")
+                        .attr("x", -marginLeft)
+                        .attr("y", 10)
+                        .attr("fill", "#abcdef")
+                        .attr("text-anchor", "start")
+                        .text("My text is here"));
+
+                // Append paths for lines
+                svgT.append("path")
+                    .attr("fill", "none")
+                    .attr("stroke", "steelblue")
+                    .attr("stroke-width", 1.5)
+                    .attr("d", tLine(graphHistory));
+
+                // Create the SVG container for Humidity graph.
+                const svgH = d3.create("svg")
+                    .attr("width", width)
+                    .attr("height", height)
+                    .attr("viewBox", [0, 0, width, height])
+                    .attr("style", "max-width: 100%; height: auto; height: intrinsic;")
+                
+                // Add the x-axis.
+                svgH.append("g")
+                    .attr("transform", `translate(0,${height - marginBottom})`)
+                    .attr("style", "color: #abcdef")
+                    .call(d3.axisBottom(x).ticks(width / 80).tickSizeOuter(0));
+
+                // Add the y-axis.
+                svgH.append("g")
+                    .attr("transform", `translate(${marginLeft},0)`)
+                    .attr("style", "color: #abcdef;")
+                    .call(d3.axisLeft(yH).ticks(height / 40))
+                    .call(g => g.select(".domain").remove())
+                    .call(g => g.selectAll(".tick line").clone()
+                        .attr("x2", width - marginLeft - marginRight)
+                        .attr("stroke-opacity", 0.1))
+                    .call(g => g.append("text")
+                        .attr("x", -marginLeft)
+                        .attr("y", 10)
+                        .attr("fill", "#abcdef")
+                        .attr("text-anchor", "start")
+                        .text("My text is here"));
+
+                // Append paths for lines
+                svgH.append("path")
+                    .attr("fill", "none")
+                    .attr("stroke", "steelblue")
+                    .attr("stroke-width", 1.5)
+                    .attr("d", hLine(graphHistory));
+                
+                // Append the SVG element.
+                temperatureGraphRow.append(svgT.node());
+                humidityGraphRow.append(svgH.node());
             }
         },
         limits: {
@@ -61,8 +188,6 @@ window.onload = (event) => {
             minHum: undefined,
         },
     }
-
-    const webSocket = new WebSocket("ws://localhost:8888/websocket/");
 
     window.addEventListener("click", function (e) {
         const id = e.target.id;
@@ -140,6 +265,9 @@ window.onload = (event) => {
         console.log(`ack`,ack)
         let { message } = data;
         if (ack && ack === 'ack') {
+            if (data.hasOwnProperty('history')) {
+                app.fn.graphHistory(data.history);
+            }
             if (data.hasOwnProperty('limits')) {
                 app.limits.minTemp = data.limits.t.min;
                 app.limits.maxTemp = data.limits.t.max;
