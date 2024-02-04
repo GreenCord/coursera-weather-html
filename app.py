@@ -221,10 +221,14 @@ class SensorApp():
 
     # Sensor Reading Methods
     def getReadout(self):
-        readout = self.generateReadout()
+
         currentUnit = self.getCurrentUnit()
+        readout = self.generateReadout()
+        self.updateHistory(readout)
+        
         if (currentUnit == "C"):
             readout["temp"] = self.convertTemperature(readout["temp"], currentUnit)
+        
         response = {
             "error": 0,
             "data": {
@@ -233,7 +237,6 @@ class SensorApp():
                 "unit": self.getCurrentUnit()
             }
         }
-        self.updateHistory(readout)
         return response
     
     def getNReadouts(self):
@@ -314,19 +317,27 @@ class SensorApp():
 
     # Temperature Conversion Methods
     def convertCurrentTemperature(self):
-        print(f"convertTemperature called")
+        print(f"convertTemperature called", self.getLimits())
         
         # Current Temperature always returns in °F
         currentTemperature = round(self.getCurrentTemperature())
         currentUnit = self.getCurrentUnit()
         newTemperature = None
         newUnit = None
-
+        limits = self.getLimits()
+        newTMin = limits["t"]["min"]
+        newTMax = limits["t"]["max"]
+        print("Retrieved limits:")
+        pprint.pprint(limits)
         if currentUnit == "F":
+            print("Converting F to C...")
             newTemperature = round(self.convertTemperature(currentTemperature, "C"))
+            newTMin = round(self.convertTemperature(limits["t"]["min"], "C"))
+            newTMax = round(self.convertTemperature(limits["t"]["max"], "C"))
             newUnit = "C"
             print(f"Converted {currentTemperature}°{currentUnit} to {newTemperature}°{newUnit}")
         else:
+            print("Returning °F")
             newTemperature = currentTemperature
             newUnit = "F"
         
@@ -337,6 +348,13 @@ class SensorApp():
             "error": 0,
             "data": {
                 "message": f"Temperature now displayed in °{newUnit}",
+                "limits": {
+                    "t": {
+                        "min": newTMin,
+                        "max": newTMax
+                    },
+                    "h": limits["h"]
+                },
                 "readout": {
                     "temp": newTemperature,
                     "rhum": self.getCurrentHumidity()
@@ -344,6 +362,7 @@ class SensorApp():
                 "unit": self.getCurrentUnit()
             }
         }
+        print(f"Did __limits stay? :: {self.getLimits()}")
         print(f"convertTemperature complete :: {response}")
         return response
 

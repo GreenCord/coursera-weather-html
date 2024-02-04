@@ -217,9 +217,9 @@ window.onload = (event) => {
             : temperature < app.limits.minTemp
                 ? "tooLow"
                 : "normal"
-        const humStatus = temperature > app.limits.maxHum
+        const humStatus = humidity > app.limits.maxHum
             ? "tooHigh"
-            : temperature < app.limits.minHum
+            : humidity < app.limits.minHum
                 ? "tooLow"
                 : "normal"
 
