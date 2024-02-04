@@ -226,26 +226,36 @@ window.onload = (event) => {
 
         switch (tempStatus) {
             case "tooHigh":
-                tRow.classList.add('toohigh')
+                tRow.classList.add('toohigh');
+                app.el.stats.t.textContent = "Too hot!";
                 break;
+
             case "tooLow":
-                tRow.classList.add('toolow')
+                tRow.classList.add('toolow');
+                app.el.stats.t.textContent = "Too cold!";
                 break;
+
             default:
                 tRow.classList.remove('toohigh');
                 tRow.classList.remove('toolow');
+                app.el.stats.t.textContent = "";
         }
 
         switch (humStatus) {
             case "tooHigh":
-                hRow.classList.add('toohigh')
+                hRow.classList.add('toohigh');
+                app.el.stats.h.textContent = "Too humid!"
                 break;
+
             case "tooLow":
                 hRow.classList.add('toolow')
+                app.el.stats.h.textContent = "Too dry!"
                 break;
+
             default:
                 hRow.classList.remove('toohigh');
                 hRow.classList.remove('toolow');
+                app.el.stats.h.textContent = ""
         }
     }
 
