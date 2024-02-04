@@ -1,4 +1,4 @@
-import json, random, redis, time
+import json, sys
 import tornado.ioloop
 import tornado.web
 import tornado.websocket
@@ -46,6 +46,9 @@ class WebSocketServer(tornado.websocket.WebSocketHandler):
         }
         self.write_message(json.dumps(response))
         print(f"::::: command completed with response :: {response}")
+        if command == "quit":
+            print(f"::::: EXIT :::::")
+            sys.exit()
         
 
     def on_close(self):
