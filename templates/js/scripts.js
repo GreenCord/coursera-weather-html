@@ -15,6 +15,7 @@ window.onload = (event) => {
             convertTemperature: { "command": "convertTemperature" },
             generate1: { "command": "generate1" },
             generateN: { "command": "generateN" },
+            loadApp: { "command": "loadApp" },
             quit: { "command": "quit" },
             resetKey: { "command": "resetKey" },
             valid: [
@@ -54,10 +55,10 @@ window.onload = (event) => {
             }
         },
         limits: {
-            maxTemp: 80,
-            minTemp: 60,
-            maxHum: 50,
-            minHum: 25,
+            maxTemp: undefined,
+            minTemp: undefined,
+            maxHum: undefined,
+            minHum: undefined,
         },
     }
 
@@ -111,7 +112,6 @@ window.onload = (event) => {
         },
     }
 
-
     webSocket.onopen = (event) => {
         console.log(webSocket);
         console.log('webSocket.onopen fired')
@@ -124,13 +124,15 @@ window.onload = (event) => {
 
         if (app.firstLaunch) {
             console.log("App first launch.")
-            webSocket.send(JSON.stringify(app.commands.generate1));
+            webSocket.send(JSON.stringify(app.commands.loadApp))
+            // webSocket.send(JSON.stringify(app.commands.generate1));
             app.firstLaunch = false;
         }
         else {
             webSocket.send(JSON.stringify(app.commands.ack))
         }
     }
+
     webSocket.onmessage = (event) => {
         console.log(`onmessage fired: ${event.data}`);
         response = JSON.parse(event.data)
@@ -138,6 +140,13 @@ window.onload = (event) => {
         console.log(`ack`,ack)
         let { message } = data;
         if (ack && ack === 'ack') {
+            if (data.hasOwnProperty('limits')) {
+                app.limits.minTemp = data.limits.t.min;
+                app.limits.maxTemp = data.limits.t.max;
+                app.limits.minHum = data.limits.h.min;
+                app.limits.maxHum = data.limits.h.max;
+                console.log(`Limits receieved. Updated local app to use them :: ${JSON.stringify(app.limits)}`)
+            }
             if (data.hasOwnProperty('readout')) {
                 const { readout } = data;
                 const unit = data.hasOwnProperty('unit') ? data.unit : "F";
@@ -182,9 +191,11 @@ window.onload = (event) => {
         app.el.cnx.innerHTML = app.connection.offline;
         toast.pop(app.el.status, "Sensors are disconnected.")
     }
+
     webSocket.onerror = (event) => {
         console.log('webSocket.onerror fired', event)
     }
+
     function updateLabels(readout, unit) {
         console.log('updateLabels function called');
         console.log(`New readout :: ${JSON.stringify(readout)}`)
@@ -194,8 +205,8 @@ window.onload = (event) => {
         const temperatureLabel = document.getElementById("temperatureLabel");
         const temperatureUnit = document.getElementById("temperatureUnit");
         const humidityLabel = document.getElementById("humidityLabel");
-        const temperature = Math.round(readout.temp);
-        const humidity = Math.round(readout.rhum);
+        const temperature = readout.temp ? Math.round(readout.temp) : "—";
+        const humidity = readout.rhum ? Math.round(readout.rhum) : "—";
 
         temperatureLabel.textContent = temperature;
         temperatureUnit.textContent = unit;
@@ -206,9 +217,9 @@ window.onload = (event) => {
             : temperature < app.limits.minTemp
                 ? "tooLow"
                 : "normal"
-        const humStatus = temperature > app.limits.maxHum
+        const humStatus = humidity > app.limits.maxHum
             ? "tooHigh"
-            : temperature < app.limits.minHum
+            : humidity < app.limits.minHum
                 ? "tooLow"
                 : "normal"
 
