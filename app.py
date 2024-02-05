@@ -44,6 +44,7 @@ class SensorApp():
     def loadApp(self):
         limits = self.getLimits()
         readout = self.getLastReadout()
+        graphHistory = self.getGraphHistory()
 
         if (readout == None):
             readout = {
@@ -51,7 +52,7 @@ class SensorApp():
                 "rhum": None
             }
         
-        return {
+        response = {
             "error": 0,
             "data": {
                 "message": "App successfully loaded.",
@@ -59,6 +60,11 @@ class SensorApp():
                 "readout": readout
             }
         }
+
+        if graphHistory != None:
+            response["data"]["history"] = graphHistory
+        
+        return response
 
     def getLimits(self):
         return self.__limits
@@ -156,11 +162,8 @@ class SensorApp():
         '''
         print("mapReadouts called")
         history = list(self.getHistory())
-        print(f"What is history?", history)
-        print(f"What is history's length?", len(history))
         
         if (len(history) == 0):
-            print("History is empty, return dict with empty lists")
             return {
                 "temps": [],
                 "rhums": [],
@@ -197,6 +200,17 @@ class SensorApp():
         
         return self.__history
     
+    def getGraphHistory(self):
+        history = list(self.getHistory())
+        if (len(history) == 0):
+            return None
+        history = sorted(history, key=lambda x: x["timestamp"])
+        n = self.nGraph
+        
+        graphHistory = history[-n:]
+        print(f"graphHistory length = {len(graphHistory)}")
+        return graphHistory
+
     def deleteHistory(self):
         print(f"deleteHistory called")
         sn = self.__serialNumber
@@ -225,7 +239,8 @@ class SensorApp():
         currentUnit = self.getCurrentUnit()
         readout = self.generateReadout()
         self.updateHistory(readout)
-        
+        graphHistory = self.getGraphHistory()
+
         if (currentUnit == "C"):
             readout["temp"] = self.convertTemperature(readout["temp"], currentUnit)
         
@@ -237,6 +252,10 @@ class SensorApp():
                 "unit": self.getCurrentUnit()
             }
         }
+
+        if graphHistory != None:
+            response["data"]["history"] = graphHistory
+
         return response
     
     def getNReadouts(self):
