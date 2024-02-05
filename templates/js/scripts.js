@@ -79,7 +79,7 @@ window.onload = (event) => {
                
                 // Declare the chart dimensions and margins.
                 const width = 928;
-                const height = 500;
+                const height = 250;
                 const marginTop = 20;
                 const marginRight = 30;
                 const marginBottom = 30;
@@ -114,24 +114,13 @@ window.onload = (event) => {
                 // Add the x-axis.
                 svgT.append("g")
                     .attr("transform", `translate(0,${height - marginBottom})`)
-                    .attr("style", "color: #abcdef")
-                    .call(d3.axisBottom(x).ticks(width / 80).tickSizeOuter(0));
 
                 // Add the y-axis.
                 svgT.append("g")
                     .attr("transform", `translate(${marginLeft},0)`)
-                    .attr("style", "color: #abcdef;")
-                    .call(d3.axisLeft(yT).ticks(height / 40))
+                    .attr("style", "color: transparent")
                     .call(g => g.select(".domain").remove())
-                    .call(g => g.selectAll(".tick line").clone()
-                        .attr("x2", width - marginLeft - marginRight)
-                        .attr("stroke-opacity", 0.1))
-                    .call(g => g.append("text")
-                        .attr("x", -marginLeft)
-                        .attr("y", 10)
-                        .attr("fill", "#abcdef")
-                        .attr("text-anchor", "start")
-                        .text("My text is here"));
+                    .call(g => g.selectAll(".tick line").remove())
 
                 // Append paths for lines
                 svgT.append("path")
@@ -150,24 +139,12 @@ window.onload = (event) => {
                 // Add the x-axis.
                 svgH.append("g")
                     .attr("transform", `translate(0,${height - marginBottom})`)
-                    .attr("style", "color: #abcdef")
-                    .call(d3.axisBottom(x).ticks(width / 80).tickSizeOuter(0));
 
                 // Add the y-axis.
                 svgH.append("g")
                     .attr("transform", `translate(${marginLeft},0)`)
-                    .attr("style", "color: #abcdef;")
-                    .call(d3.axisLeft(yH).ticks(height / 40))
                     .call(g => g.select(".domain").remove())
-                    .call(g => g.selectAll(".tick line").clone()
-                        .attr("x2", width - marginLeft - marginRight)
-                        .attr("stroke-opacity", 0.1))
-                    .call(g => g.append("text")
-                        .attr("x", -marginLeft)
-                        .attr("y", 10)
-                        .attr("fill", "#abcdef")
-                        .attr("text-anchor", "start")
-                        .text("My text is here"));
+                    .call(g => g.selectAll(".tick line").remove())
 
                 // Append paths for lines
                 svgH.append("path")

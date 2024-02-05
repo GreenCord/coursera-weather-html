@@ -44,6 +44,7 @@ class SensorApp():
     def loadApp(self):
         limits = self.getLimits()
         readout = self.getLastReadout()
+        graphHistory = self.getGraphHistory()
 
         if (readout == None):
             readout = {
@@ -51,7 +52,7 @@ class SensorApp():
                 "rhum": None
             }
         
-        return {
+        response = {
             "error": 0,
             "data": {
                 "message": "App successfully loaded.",
@@ -59,6 +60,11 @@ class SensorApp():
                 "readout": readout
             }
         }
+
+        if graphHistory != None:
+            response["data"]["history"] = graphHistory
+        
+        return response
 
     def getLimits(self):
         return self.__limits
