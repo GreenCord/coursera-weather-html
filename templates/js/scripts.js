@@ -69,6 +69,7 @@ window.onload = (event) => {
                 const extent = d3.extent(data, d => d[key]);
                 console.log(`Extent for ${key}: ${JSON.stringify(extent)}`)
                 if (axis.toLowerCase() === "x") return d3.scaleUtc(extent,positioning)
+                // return d3.scaleThreshold(extent, positioning)
                 return d3.scaleLinear(extent, positioning)
             },
             graphHistory: function(history) {
@@ -91,16 +92,32 @@ window.onload = (event) => {
 
                 // Declare the y (vertical position) scale.
                 const yT = app.fn
-                    .graphAxisScale("y", graphHistory, "temp", [height - marginBottom, marginTop]);
+                    .graphAxisScale("y", graphHistory, "temp", [height - marginBottom, marginTop])
+
+                const yTScale = d3.scaleThreshold([app.limits.minTemp, app.limits.maxTemp], ["#1789FC", "#c4cad0", "#db4437"])
+
                 const yH = app.fn
-                    .graphAxisScale("y", graphHistory, "rhum", [height - marginBottom, marginTop]);
+                    .graphAxisScale("y", graphHistory, "rhum", [height - marginBottom, marginTop])
 
                 // Declare the line generators
+                const gradientT = {
+                    id: "temp",
+                    href: new URL("#temp", window.location.href)
+                }
                 const tLine = d3.line()
+                    .curve(d3.curveBasis)
+                    .defined(d => !isNaN(d.temp))
                     .x(d => x(d.date))
                     .y(d => yT(d.temp))
                 
+                const gradientH = {
+                    id: "hum",
+                    href: new URL("#hum", window.location.href)
+                }
+
                 const hLine = d3.line()
+                    .curve(d3.curveBasis)
+                    .defined(d => !isNaN(d.rhum))
                     .x(d => x(d.date))
                     .y(d => yH(d.rhum))
 
@@ -122,10 +139,30 @@ window.onload = (event) => {
                     .call(g => g.select(".domain").remove())
                     .call(g => g.selectAll(".tick line").remove())
 
+                // Add the gradient
+                svgT.append("linearGradient")
+                    .attr("id", gradientT.id)
+                    .attr("gradientUnits", "userSpaceOnUse")
+                    .attr("x1", 0)
+                    .attr("y1", 0)
+                    .attr("x2", 0)
+                    .attr("y2", height)
+                  .selectAll("stop")
+                    .data([
+                        {offset: "0%", color: "#db4437" },
+                        {offset: yT(app.limits.maxTemp) / height, color: "#db4437"},
+                        {offset: yT(app.limits.maxTemp) / height, color: "#c4cad0"},
+                        {offset: yT(app.limits.minTemp) / height, color: "#c4cad0"},
+                        {offset: "100%", color: "#1789FC"},
+                    ])
+                  .join("stop")
+                    .attr("offset", d => d.offset)
+                    .attr("stop-color", d => d.color);
+
                 // Append paths for lines
                 svgT.append("path")
                     .attr("fill", "none")
-                    .attr("stroke", "steelblue")
+                    .attr("stroke", `url(${gradientT.href})`)
                     .attr("stroke-width", 1.5)
                     .attr("d", tLine(graphHistory));
 
@@ -146,10 +183,30 @@ window.onload = (event) => {
                     .call(g => g.select(".domain").remove())
                     .call(g => g.selectAll(".tick line").remove())
 
+                // Add the gradient
+                svgH.append("linearGradient")
+                    .attr("id", gradientH.id)
+                    .attr("gradientUnits", "userSpaceOnUse")
+                    .attr("x1", 0)
+                    .attr("y1", 0)
+                    .attr("x2", 0)
+                    .attr("y2", height)
+                  .selectAll("stop")
+                    .data([
+                        {offset: "0%", color: "#1789FC" },
+                        {offset: yT(app.limits.maxTemp) / height, color: "#1789FC"},
+                        {offset: yT(app.limits.maxTemp) / height, color: "#c4cad0"},
+                        {offset: yT(app.limits.minTemp) / height, color: "#c4cad0"},
+                        {offset: "100%", color: "#c8963e"},
+                    ])
+                  .join("stop")
+                    .attr("offset", d => d.offset)
+                    .attr("stop-color", d => d.color);
+
                 // Append paths for lines
                 svgH.append("path")
                     .attr("fill", "none")
-                    .attr("stroke", "steelblue")
+                    .attr("stroke", `url(${gradientH.href})`)
                     .attr("stroke-width", 1.5)
                     .attr("d", hLine(graphHistory));
                 
@@ -242,15 +299,15 @@ window.onload = (event) => {
         console.log(`ack`,ack)
         let { message } = data;
         if (ack && ack === 'ack') {
-            if (data.hasOwnProperty('history')) {
-                app.fn.graphHistory(data.history);
-            }
             if (data.hasOwnProperty('limits')) {
                 app.limits.minTemp = data.limits.t.min;
                 app.limits.maxTemp = data.limits.t.max;
                 app.limits.minHum = data.limits.h.min;
                 app.limits.maxHum = data.limits.h.max;
                 console.log(`Limits receieved. Updated local app to use them :: ${JSON.stringify(app.limits)}`)
+            }
+            if (data.hasOwnProperty('history')) {
+                app.fn.graphHistory(data.history);
             }
             if (data.hasOwnProperty('readout')) {
                 const { readout } = data;
