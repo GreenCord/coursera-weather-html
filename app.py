@@ -5,6 +5,7 @@ from statistics import mean
 
 class SensorApp():
 
+    # Back End App Initialization
     def __init__(self, *args, **kwargs):
         self.__db = redis.Redis(host=args[1], port=args[2], db=args[3])    
         # Init PseudoSensor for readouts
@@ -66,6 +67,7 @@ class SensorApp():
         
         return response
 
+    # Simple Getters/Setters
     def getLimits(self):
         return self.__limits
     
@@ -97,6 +99,7 @@ class SensorApp():
         self.__currentUnit = unit
         return 0
 
+    # App Methods
     def handleCommand(self, command):
         print(f"::::: handleCommand :: {command}")
         
@@ -193,7 +196,7 @@ class SensorApp():
         print(f"mapReadouts complete :: {mappedValues}")
         return mappedValues    
     
-    # History Methods
+    # History Methods Get/Set/Delete
     def getHistory(self):
         history = list(self.__db.smembers(self.__serialNumber))
         self.__history = list(map(lambda x: json.loads(x), history))
@@ -275,7 +278,7 @@ class SensorApp():
         print(f"getNReadouts finished, returning final readout :: {response}")
         return response
 
-    # Pseudosensor - Generates a readout
+    ## Pseudosensor - Generates a readout
     def generateReadout(self):
         h,t = self.ps.generate_values()
         currentTime = datetime.datetime.now()

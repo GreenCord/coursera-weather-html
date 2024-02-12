@@ -1,15 +1,12 @@
 window.onload = (event) => {
     
+    // Locale intended for future update
     const locale = document.getElementById("locale").textContent;
     const webSocket = new WebSocket("ws://localhost:8888/websocket/");
+    
+    // Prototype app constants/states/methods. Convert to class if proceeding.
     const app = {
         locale,
-        firstLaunch: true,
-        numSuccesses: 0,
-        numTrials: 0,
-        status: {
-            inputIsDisabled: false,
-        },
         commands: {
             ack: { "command": "ack" },
             calculateStats: { "command": "calculateStats" },
@@ -54,10 +51,12 @@ window.onload = (event) => {
             }
         },
         fn: {
+            // Removes min/max/avg stats output.
             clearStats: function() {
                 app.el.stats.h.textContent = "";
                 app.el.stats.t.textContent = "";
             },
+            // Converts Python timestamp (s) to JavaScript (ms)
             convertTimestamps: function(arr) {
                 arr.forEach((el) => {
                     el.timestamp = el.timestamp * 1000;
@@ -65,6 +64,7 @@ window.onload = (event) => {
                 })
                 return arr
             },
+            // Reusable function to create graph axis scales.
             graphAxisScale: function(axis, data, key, positioning){
                 const extent = d3.extent(data, d => d[key]);
                 console.log(`Extent for ${key}: ${JSON.stringify(extent)}`)
@@ -72,6 +72,7 @@ window.onload = (event) => {
                 // return d3.scaleThreshold(extent, positioning)
                 return d3.scaleLinear(extent, positioning)
             },
+            // Called to render the graph to interface.
             graphHistory: function(history) {
                 app.el.graph.t.innerHTML = "";
                 app.el.graph.h.innerHTML = "";
@@ -93,8 +94,6 @@ window.onload = (event) => {
                 // Declare the y (vertical position) scale.
                 const yT = app.fn
                     .graphAxisScale("y", graphHistory, "temp", [height - marginBottom, marginTop])
-
-                const yTScale = d3.scaleThreshold([app.limits.minTemp, app.limits.maxTemp], ["#1789FC", "#c4cad0", "#db4437"])
 
                 const yH = app.fn
                     .graphAxisScale("y", graphHistory, "rhum", [height - marginBottom, marginTop])
@@ -213,16 +212,84 @@ window.onload = (event) => {
                 // Append the SVG element.
                 temperatureGraphRow.append(svgT.node());
                 humidityGraphRow.append(svgH.node());
-            }
+            },
+            updateLabels: function(readout, unit) {
+                console.log('updateLabels function called');
+                console.log(`New readout :: ${JSON.stringify(readout)}`)
+                console.log(`Current Unit :: ${unit}`)
+                const tRow = document.getElementById("temperatureRow");
+                const hRow = document.getElementById("humidityRow");
+                const temperatureLabel = document.getElementById("temperatureLabel");
+                const temperatureUnit = document.getElementById("temperatureUnit");
+                const humidityLabel = document.getElementById("humidityLabel");
+                const temperature = readout.temp ? Math.round(readout.temp) : "—";
+                const humidity = readout.rhum ? Math.round(readout.rhum) : "—";
+        
+                temperatureLabel.textContent = temperature;
+                temperatureUnit.textContent = unit;
+                humidityLabel.textContent = humidity;
+        
+                const tempStatus = temperature > app.limits.maxTemp
+                    ? "tooHigh"
+                    : temperature < app.limits.minTemp
+                        ? "tooLow"
+                        : "normal"
+                const humStatus = humidity > app.limits.maxHum
+                    ? "tooHigh"
+                    : humidity < app.limits.minHum
+                        ? "tooLow"
+                        : "normal"
+        
+        
+                switch (tempStatus) {
+                    case "tooHigh":
+                        tRow.classList.add('toohigh');
+                        app.el.stats.t.textContent = "Too hot!";
+                        break;
+        
+                    case "tooLow":
+                        tRow.classList.add('toolow');
+                        app.el.stats.t.textContent = "Too cold!";
+                        break;
+        
+                    default:
+                        tRow.classList.remove('toohigh');
+                        tRow.classList.remove('toolow');
+                        app.el.stats.t.textContent = "";
+                }
+        
+                switch (humStatus) {
+                    case "tooHigh":
+                        hRow.classList.add('toohigh');
+                        app.el.stats.h.textContent = "Too humid!"
+                        break;
+        
+                    case "tooLow":
+                        hRow.classList.add('toolow')
+                        app.el.stats.h.textContent = "Too dry!"
+                        break;
+        
+                    default:
+                        hRow.classList.remove('toohigh');
+                        hRow.classList.remove('toolow');
+                        app.el.stats.h.textContent = ""
+                }
+            },
         },
+        // Boundaries for high/low alarms.
         limits: {
             maxTemp: undefined,
             minTemp: undefined,
             maxHum: undefined,
             minHum: undefined,
         },
+        status: {
+            firstLaunch: true,
+            inputIsDisabled: false,
+        },
     }
 
+    // Capture clicks on interface.
     window.addEventListener("click", function (e) {
         const id = e.target.id;
         console.log('Click! ', id)
@@ -244,6 +311,7 @@ window.onload = (event) => {
         }
     })
 
+    // "Toaster" to update interface status message. Abstract to utility/class in future update.
     const toast = {
         clear(el) {
             el.textContent = "";
@@ -271,6 +339,7 @@ window.onload = (event) => {
         },
     }
 
+    // Handle new socket connection.
     webSocket.onopen = (event) => {
         console.log(webSocket);
         console.log('webSocket.onopen fired')
@@ -281,17 +350,18 @@ window.onload = (event) => {
         app.el.cnx.innerHTML = app.connection.online;
         toast.pop(app.el.status, "Sensors are connected.")
 
-        if (app.firstLaunch) {
+        if (app.status.firstLaunch) {
             console.log("App first launch.")
             webSocket.send(JSON.stringify(app.commands.loadApp))
             // webSocket.send(JSON.stringify(app.commands.generate1));
-            app.firstLaunch = false;
+            app.status.firstLaunch = false;
         }
         else {
             webSocket.send(JSON.stringify(app.commands.ack))
         }
     }
 
+    // Handle socket messaging received.
     webSocket.onmessage = (event) => {
         console.log(`onmessage fired: ${event.data}`);
         response = JSON.parse(event.data)
@@ -312,7 +382,7 @@ window.onload = (event) => {
             if (data.hasOwnProperty('readout')) {
                 const { readout } = data;
                 const unit = data.hasOwnProperty('unit') ? data.unit : "F";
-                updateLabels(readout, unit)
+                app.fn.updateLabels(readout, unit)
             }
             if (data.hasOwnProperty('stats')) {
                 const { stats } = data
@@ -345,6 +415,7 @@ window.onload = (event) => {
         }
     }
 
+    // Handle when socket is closed.
     webSocket.onclose = (event) => {
         console.log('webSocket.onclose fired', event)
         app.el.cnx.classList.add('disconnected');
@@ -354,71 +425,11 @@ window.onload = (event) => {
         toast.pop(app.el.status, "Sensors are disconnected.")
     }
 
+    // Handle socket errors.
     webSocket.onerror = (event) => {
         console.log('webSocket.onerror fired', event)
     }
 
-    function updateLabels(readout, unit) {
-        console.log('updateLabels function called');
-        console.log(`New readout :: ${JSON.stringify(readout)}`)
-        console.log(`Current Unit :: ${unit}`)
-        const tRow = document.getElementById("temperatureRow");
-        const hRow = document.getElementById("humidityRow");
-        const temperatureLabel = document.getElementById("temperatureLabel");
-        const temperatureUnit = document.getElementById("temperatureUnit");
-        const humidityLabel = document.getElementById("humidityLabel");
-        const temperature = readout.temp ? Math.round(readout.temp) : "—";
-        const humidity = readout.rhum ? Math.round(readout.rhum) : "—";
-
-        temperatureLabel.textContent = temperature;
-        temperatureUnit.textContent = unit;
-        humidityLabel.textContent = humidity;
-
-        const tempStatus = temperature > app.limits.maxTemp
-            ? "tooHigh"
-            : temperature < app.limits.minTemp
-                ? "tooLow"
-                : "normal"
-        const humStatus = humidity > app.limits.maxHum
-            ? "tooHigh"
-            : humidity < app.limits.minHum
-                ? "tooLow"
-                : "normal"
-
-
-        switch (tempStatus) {
-            case "tooHigh":
-                tRow.classList.add('toohigh');
-                app.el.stats.t.textContent = "Too hot!";
-                break;
-
-            case "tooLow":
-                tRow.classList.add('toolow');
-                app.el.stats.t.textContent = "Too cold!";
-                break;
-
-            default:
-                tRow.classList.remove('toohigh');
-                tRow.classList.remove('toolow');
-                app.el.stats.t.textContent = "";
-        }
-
-        switch (humStatus) {
-            case "tooHigh":
-                hRow.classList.add('toohigh');
-                app.el.stats.h.textContent = "Too humid!"
-                break;
-
-            case "tooLow":
-                hRow.classList.add('toolow')
-                app.el.stats.h.textContent = "Too dry!"
-                break;
-
-            default:
-                hRow.classList.remove('toohigh');
-                hRow.classList.remove('toolow');
-                app.el.stats.h.textContent = ""
-        }
-    }
+    // Function to update the temperature/humidity readout values in interface.
 
 }
