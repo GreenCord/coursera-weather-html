@@ -1,6 +1,12 @@
 # Mac FS
 .DS_Store
 
+# Device Info
+certs/
+data/
+deviceData/
+device.json
+
 # Byte-compiled / optimized / DLL files
 __pycache__/
 *.py[cod]
