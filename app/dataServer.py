@@ -20,8 +20,6 @@ class SensorData():
         self.broadcaster = Broadcaster(listener=False, topic ="aht20sensor")
 
         # Init Vars
-        self.currentTemperature = 0 # °C by default
-        self.currentHumidity = 0    # % relative Humidity
         self.n = int(interval)      # Number of ms between sensor readings
 
     def startSensing(self):

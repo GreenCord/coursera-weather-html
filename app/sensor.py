@@ -1,3 +1,6 @@
+from simple_chalk import chalk
+from utils.custom_logging import Logger
+
 isPseudo = False
 try:
     # Try loading the AHT20 Sensor resources when one is connected
@@ -23,18 +26,22 @@ class AHT20Sensor:
     tempVal = 0
     
     def __init__(self):
+        self.logger = Logger("Sensor")
         if (isPseudo):
             # Use fake data if no sensor was detected
+            self.logger.warn("No sensor was detected. Using psuedosensor.")
             self.humVal = self.h_range[ self.h_range_index ]
             self.tempVal = self.t_range[ self.t_range_index ]
         else:
             # Use actual sensor data
+            self.logger.info(chalk.blue("Temperature/Humidity sensor was detected. Using actual sensor data."))
             self.humVal = sensor.relative_humidity
             self.tempVal = sensor.temperature
 
     def getReadout(self):
         if (isPseudo):
             # Use fake data if no sensor was detected
+            self.logger.warn("Using pseudosensor data.")
             self.humVal = self.h_range[ self.h_range_index ] + random.uniform(0,10)
             self.tempVal = self.t_range[ self.t_range_index ] + random.uniform(0,10)
 
