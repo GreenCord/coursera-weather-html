@@ -2,7 +2,7 @@
  * Lambda function for putting received sensor data into DynamoDB table.
  * @module app/receiver
  */
-
+const { v4: uuidv4 } = require(`uuid`);
 const { DynamoDBClient, PutItemCommand } = require(`@aws-sdk/client-dynamodb`);
 
 const client = new DynamoDBClient({ region: `us-east-2` });
@@ -11,6 +11,7 @@ const client = new DynamoDBClient({ region: `us-east-2` });
 exports.handleSensorData = async (event) => {
     console.log(`+++++ Receiver Handler Event :: `, JSON.stringify(event));
     let response = {};
+    const guid = uuidv4();
 
     try {
         // Destructure event to retrieve sensor data information.
@@ -21,11 +22,12 @@ exports.handleSensorData = async (event) => {
             const params = {
                 TableName: `aht20sensor-dev`,
                 Item: {
+                    "guid": { S: `${guid}` },
                     "clid": { S: `${clid}` },
                     "ts": { N: `${ts}` },
                     "temp": { N: `${temp}` },
-                    "rhum": { N: `${rhum}` }
-                }
+                    "rhum": { N: `${rhum}` },
+                },
             };
 
             console.log(`params:`, JSON.stringify(params));
