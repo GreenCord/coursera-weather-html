@@ -22,7 +22,7 @@ exports.handleSensorData = async (event) => {
                 TableName: `aht20sensor-dev`,
                 Item: {
                     "clid": { S: `${clid}` },
-                    "ts": { S: `${ts}` },
+                    "ts": { N: `${ts}` },
                     "temp": { N: `${temp}` },
                     "rhum": { N: `${rhum}` }
                 }
