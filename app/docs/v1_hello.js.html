@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
     <meta charset="utf-8">
-    <title>JSDoc: Home</title>
+    <title>JSDoc: Source: v1/hello.js</title>
 
     <script src="scripts/prettify/prettify.js"> </script>
     <script src="scripts/prettify/lang-css.js"> </script>
@@ -17,32 +17,43 @@
 
 <div id="main">
 
-    <h1 class="page-title">Home</h1>
+    <h1 class="page-title">Source: v1/hello.js</h1>
 
     
 
 
 
     
+    <section>
+        <article>
+            <pre class="prettyprint source linenums"><code>/**
+ * @module API/hello
+*/
+import Logger from "../utils/custom-logger.js";
 
+const name = `hello`;
+const log = new Logger(`API (${name.toUpperCase()})`);
 
-    <h3> </h3>
+/**
+ * Returns a success message for testing successful connection through the API Gateway.
+ * @param {Object} event - Event received when the lambda function is invoked.
+ * @returns {Object} The response object indicating success.
+ */
+export async function hello(event) {
+    log.req(name, event);
 
+    const response = {
+        statusCode: 418,
+        body: JSON.stringify({
+            message: `Short and stout!`,
+        }),
+    };
 
-
-
-
-
-
-
-
-
-    
-
-
-
-
-
+    log.res(name, response);
+    return response;
+};</code></pre>
+        </article>
+    </section>
 
 
 

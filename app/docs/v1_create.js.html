@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
     <meta charset="utf-8">
-    <title>JSDoc: Home</title>
+    <title>JSDoc: Source: v1/create.js</title>
 
     <script src="scripts/prettify/prettify.js"> </script>
     <script src="scripts/prettify/lang-css.js"> </script>
@@ -17,32 +17,45 @@
 
 <div id="main">
 
-    <h1 class="page-title">Home</h1>
+    <h1 class="page-title">Source: v1/create.js</h1>
 
     
 
 
 
     
+    <section>
+        <article>
+            <pre class="prettyprint source linenums"><code>/**
+ * @module API/create
+ */
+import Logger from "../utils/custom-logger.js";
 
+const fnName = `create`;
+const log = new Logger(`API`);
 
-    <h3> </h3>
+/**
+ * CREATE (NOT IMPLEMENTED)
+ * This would be the Create endpoint of the API.
+ * @param {Object} event - Event received when the lambda function is invoked.
+ * @returns {Object} The response object indicating 501 NOT IMPLEMENTED.
+*/
+export async function create(event) {
+    log.req(fnName, event);
 
+    const response = {
+        statusCode: 501,
+        body: JSON.stringify({
+            message: `Create not implemented for this API.`
+        })
+    };
 
+    log.res(fnName, response);
+    return response;
 
-
-
-
-
-
-
-
-    
-
-
-
-
-
+};</code></pre>
+        </article>
+    </section>
 
 
 
