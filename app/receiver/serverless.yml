@@ -1,0 +1,29 @@
+# "org" ensures this Service is used with the correct Serverless Framework Access Key.
+org: greencord
+# "app" enables Serverless Framework Dashboard features and sharing them with other Services.
+app: aht20sensor
+# "service" is the name of this project. This will also be added to your AWS resource names.
+service: receiver
+
+provider:
+  name: aws
+  runtime: nodejs20.x
+  region: us-east-2
+  environment:
+    AHT20SENSOR_TABLE: aht20sensor-${opt:stage, "dev"}
+  iam:
+    role:
+      statements:
+        - Effect: Allow
+          Action:
+            # - dynamodb:Query
+            # - dynamodb:Scan
+            # - dynamodb:GetItem
+            - dynamodb:PutItem
+            # - dynamodb:UpdateItem
+            # - dynamodb:DeleteItem
+          Resource: "arn:aws:dynamodb:${opt:region, self:provider.region}:*:table/${self:provider.environment.AHT20SENSOR_TABLE}"
+
+functions:
+  handleSensorData:
+    handler: handler.handleSensorData

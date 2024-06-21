@@ -1,3 +1,12 @@
 {
+    "editor.formatOnSave": true,
+    "editor.formatOnSaveMode": "modificationsIfAvailable",
+    "editor.formatOnPaste": true,
+    "editor.codeActionsOnSave": {
+        "source.fixAll": "explicit"
+    },
+    "eslint.validate": [
+        "javascript"
+    ],
     "python.terminal.activateEnvironment": true
 }
