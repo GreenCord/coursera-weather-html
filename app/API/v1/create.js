@@ -1,5 +1,5 @@
 /**
- * @module API/create
+ * @module API/v1/create
  */
 import Logger from "../utils/custom-logger.js";
 

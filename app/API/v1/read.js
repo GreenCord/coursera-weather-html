@@ -1,12 +1,12 @@
 /**
- * @module API/read
+ * @module API/v1/read
  */
 import Logger from "../utils/custom-logger.js";
-
+import { DynamoDBClient, ScanCommand } from "@aws-sdk/client-dynamodb";
+import { unmarshall } from "@aws-sdk/util-dynamodb";
 
 const fnName = `read`;
 const log = new Logger(`API`);
-const { DynamoDBClient, GetItemCommand } = require(`@aws-sdk/client-dynamodb`);
 const client = new DynamoDBClient({ region: `us-east-2` });
 
 /**
@@ -32,22 +32,39 @@ async function getLatestReadout(clid) {
  * @returns {Object} The response object indicating success.
  */
 export async function read(event) {
-    log.req(fnName, event);
+    log.req(event);
 
     const { pathParameters } = event;
     const { clid } = pathParameters;
     const response = {};
+    const params = {
+        TableName: `aht20sensor-dev`,
+        ExpressionAttributeValues: {
+            ":clid": {
+                "S": `${clid}`,
+            },
+        },
+        FilterExpression: `clid = :clid`,
+    };
 
-    console.debug(`Working with clientId ${clid}`);
 
     try {
-        const readout = await getLatestReadout(clid);
+        console.debug(`Attempting to connect to Dynamo and retrieve readouts for client ID ${clid}`);
+        console.debug(`Params: `, params);
+        const data = await client.send(new ScanCommand(params));
+
+        console.log(`Dynamo DB Query Result :: ` + JSON.stringify(data.Items));
+        // Sort items by timestamp ascending, latest item at end.
+        data.Items.sort((a, b) => a.ts.N - b.ts.N);
+
+
+        const readout = unmarshall(data.Items.pop());
 
         response.statusCode = 200;
         response.body = JSON.stringify(readout);
     }
     catch (err) {
-        console.error(`An error occurred getting the latest readout.`, JSON.stringify(err));
+        console.error(`An error occurred getting the latest readout.` + JSON.stringify(err));
 
         response.statusCode = 500;
         response.body = JSON.stringify({
@@ -56,7 +73,7 @@ export async function read(event) {
     }
 
 
-    log.res(fnName, response);
+    log.res(response);
     return response;
 
 };
