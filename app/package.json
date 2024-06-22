@@ -11,6 +11,7 @@
   },
   "devDependencies": {
     "eslint": "^9.5.0",
+    "eslint-plugin-jsdoc": "^48.2.13",
     "jsdoc": "^4.0.3"
   },
   "dependencies": {
