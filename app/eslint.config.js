@@ -1,4 +1,9 @@
+import jsdoc from 'eslint-plugin-jsdoc';
+
 export default [{
+    "plugins": {
+        jsdoc
+    },
     'rules': {
         'brace-style': [
             `error`,

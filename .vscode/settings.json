@@ -5,6 +5,11 @@
     "editor.codeActionsOnSave": {
         "source.fixAll": "explicit"
     },
+    "eslint.workingDirectories": [
+        {
+            "mode": "auto"
+        }
+    ],
     "eslint.validate": [
         "javascript"
     ],
