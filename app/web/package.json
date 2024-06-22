@@ -1,16 +1,16 @@
 {
-  "name": "web",
-  "version": "1.0.0",
-  "main": "server.js",
-  "type": "module",
-  "dependencies": {
-    "express": "^4.19.2"
-  },
+  "name": "aht20web",
+  "version": "0.0.0",
+  "private": true,
   "scripts": {
-    "start": "node server.js"
+    "start": "node ./bin/www"
   },
-  "devDependencies": {},
-  "author": "Steve Martinez",
-  "license": "ISC",
-  "description": ""
+  "dependencies": {
+    "cookie-parser": "~1.4.4",
+    "debug": "~2.6.9",
+    "express": "~4.16.1",
+    "hbs": "~4.0.4",
+    "http-errors": "~1.6.3",
+    "morgan": "~1.9.1"
+  }
 }
